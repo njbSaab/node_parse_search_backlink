@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>URL Scraper</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 2rem;
+        height: 100dvh;
+        background: linear-gradient(180deg, #007bff1b, #007bff2e);
+        max-width: 1000px;
+        margin: 0 auto;
+        padding-bottom: 200px;
+      }
+      h1 {
+        text-align: center;
+      }
+      textarea {
+        width: 98%;
+        height: 60%;
+        margin-bottom: 1rem;
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 20px;
+        border: transparent;
+      }
+      textarea:focus-visible {
+        outline: #007bff auto 1px;
+      }
+      button {
+        padding: 20px;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        background: linear-gradient(180deg, #007bff1b, #007bff);
+        color: #fff;
+        border: none;
+        border-radius: 20px;
+        width: 100%;
+        transition: 0.3s ease-in-out;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:active {
+        scale: 0.95;
+        transition: 0.3s ease-in-out;
+      }
+      .output {
+        position: fixed;
+        background: transparent;
+        border: none;
+        top: 70%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(180deg, #007bff1b, #007bff30);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        padding: 20px;
+      }
+      .output.wrong {
+        background-color: rgba(255, 0, 0, 0.393);
+        color: red;
+        font-weight: bold;
+      }
+      .wrong-text {
+        color: red;
+        font-weight: bold;
+      }
+      .output.success {
+        background-color: rgba(0, 128, 0, 0.399);
+        color: green;
+        font-weight: bold;
+      }
+      #spinner {
+        width: 200px;
+        position: fixed;
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+      }
+      #spinner.active {
+        display: block;
+      }
+      ul li span {
+        color: gray;
+      }
+      .pb-10 {
+        padding-bottom: 10px;
+      }
+      .pb-5 {
+        padding-bottom: 5px;
+      }
+      .link-row {
+        display: block;
+      }
+      .link-row {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+      }
+      .link-col {
+        display: flex;
+        flex-direction: column;
+        gap: 2.5px;
+      }
+      .accordion {
+        background: linear-gradient(180deg, #007bff1b, #007bff2e);
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        text-align: left;
+        border: none;
+        outline: none;
+        transition: 0.4s;
+        color: black;
+        font-weight: bold;
+      }
+      /* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+      .accordion:hover {
+        background-color: rgba(0, 128, 0, 0.399);
+      }
+
+      /* Style the accordion panel. Note: hidden by default */
+      .panel {
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+      }
+      .input {
+        width: 98%;
+        border-radius: 20px;
+        margin: 20px 0 30px;
+        padding: 10px;
+        font-size: 20px;
+        border: transparent;
+      }
+      input:focus-visible {
+        outline: #007bff auto 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>URL Scraper</h1>
+
+    <button class="accordion">Подсказка</button>
+    <ul class="panel">
+      <li class="pb-5">Введите список URL <strong>c отступами:</strong></li>
+      <li class="link-row pb-10">
+        <span>http://example.com</span>
+        <span>http://example2.com</span>
+        <span> http://example3.com</span>
+      </li>
+      <li class="pb-5">Введите список URL <strong>с новой строки:</strong></li>
+      <li class="link-col pb-10">
+        <span>http://example.com</span>
+        <span>http://example2.com</span>
+        <span> http://example3.com</span>
+      </li>
+      <li class="wrong-text">
+        Внимание!!! Без знаков пунктуации и тд...( ! ? . , - )
+      </li>
+    </ul>
+
+    <p></p>
+
+    <input
+      placeholder="https://example"
+      id="backlinkInput"
+      class="input"
+      type="text"
+    />
+    <textarea id="urlInput" placeholder="Введите URL здесь..."></textarea>
+    <button onclick="sendUrls()">Отправить</button>
+
+    <div id="output" class="output"></div>
+    <div id="spinner">
+      <img src="img/Ell.gif" alt="" />
+    </div>
+    <script>
+      // Аккордеон
+      var acc = document.getElementsByClassName("accordion");
+      for (let i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function () {
+          this.classList.toggle("active");
+          var panel = this.nextElementSibling;
+          panel.style.display =
+            panel.style.display === "block" ? "none" : "block";
+        });
+      }
+
+      async function sendUrls() {
+        const urlInput = document.getElementById("urlInput").value;
+        const backlinkInput = document
+          .getElementById("backlinkInput")
+          .value.trim();
+        const output = document.getElementById("output");
+        const spinner = document.getElementById("spinner");
+
+        // Разделяем URL по строкам/пробелам
+        const urls = urlInput
+          .split(/[\s]+/)
+          .map((url) => url.trim())
+          .filter((url) => url);
+
+        // Проверка, чтобы хотя бы один URL был указан
+        if (!urls.length) {
+          output.textContent = "Пожалуйста, введите хотя бы один URL.";
+          output.classList.add("wrong");
+          return;
+        }
+
+        // Проверка целевого домена
+        if (!backlinkInput) {
+          output.textContent = "Пожалуйста, введите целевой домен.";
+          output.classList.add("wrong");
+          return;
+        }
+
+        // Подготовка к запросу
+        output.textContent = "Пожалуйста, подождите, файл формируется...";
+        output.classList.remove("wrong", "success");
+        spinner.classList.add("active");
+
+        try {
+          // Отправляем POST-запрос на /scrape
+          const response = await fetch("/scrape", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              urls, // Массив URL
+              targetDomain: backlinkInput, // Один домен для поиска ссылок
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Ошибка: ${response.statusText}`);
+          }
+
+          // Скачивание файла (CSV)
+          const blob = await response.blob();
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = downloadUrl;
+          a.download = "web_data.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          spinner.classList.remove("active");
+          output.textContent = "Файл успешно скачан.";
+          output.classList.add("success");
+        } catch (error) {
+          output.textContent = `Ошибка при отправке данных: ${error.message}`;
+        } finally {
+          spinner.classList.remove("active");
+        }
+      }
+    </script>
+  </body>
+</html>
